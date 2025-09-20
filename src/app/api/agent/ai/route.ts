@@ -1,6 +1,6 @@
 import { streamObject } from "ai";
 
-import { customModelProvider } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
 import { buildAgentGenerationPrompt } from "lib/ai/prompts";
 import globalLogger from "logger";
 import { ChatModel } from "app-types/chat";
@@ -10,7 +10,7 @@ import { colorize } from "consola/utils";
 import { AgentGenerateSchema } from "app-types/agent";
 import { z } from "zod";
 import { loadAppDefaultTools } from "../../chat/shared.chat";
-import { workflowRepository } from "lib/db/repository";
+import { workflowRepository, userRepository } from "lib/db/repository";
 import { safe } from "ts-safe";
 import { objectFlow } from "lib/utils";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
@@ -34,6 +34,12 @@ export async function POST(request: Request) {
     if (!session) {
       return new Response("Unauthorized", { status: 401 });
     }
+
+    // Get user preferences to access API keys
+    const userPreferences = await userRepository.getPreferences(
+      session.user.id,
+    );
+    const modelProvider = createDynamicModelProvider(userPreferences?.apiKeys);
 
     const toolNames = new Set<string>();
 
@@ -82,7 +88,7 @@ export async function POST(request: Request) {
     const system = buildAgentGenerationPrompt(Array.from(toolNames));
 
     const result = streamObject({
-      model: customModelProvider.getModel(chatModel),
+      model: modelProvider.getModel(chatModel),
       system,
       prompt: message,
       schema: dynamicAgentSchema,

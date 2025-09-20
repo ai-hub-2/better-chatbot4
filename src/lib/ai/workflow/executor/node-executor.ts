@@ -1,4 +1,4 @@
-import { customModelProvider } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
 import {
   ConditionNodeData,
   OutputNodeData,
@@ -91,7 +91,9 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
   node,
   state,
 }) => {
-  const model = customModelProvider.getModel(node.model);
+  // TODO: Pass user API keys from workflow execution context
+  const modelProvider = createDynamicModelProvider();
+  const model = modelProvider.getModel(node.model);
 
   // Convert TipTap JSON messages to AI SDK format, resolving mentions to actual data
   const messages: Omit<UIMessage, "id">[] = node.messages.map((message) =>
@@ -214,7 +216,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       : undefined;
 
     const response = await generateText({
-      model: customModelProvider.getModel(node.model),
+      model: modelProvider.getModel(node.model),
       toolChoice: "required", // Force the model to call the tool
       prompt: prompt || "",
       tools: {

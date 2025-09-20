@@ -1,10 +1,10 @@
 import { smoothStream, streamText } from "ai";
 
-import { customModelProvider } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
 import { CREATE_THREAD_TITLE_PROMPT } from "lib/ai/prompts";
 import globalLogger from "logger";
 import { ChatModel } from "app-types/chat";
-import { chatRepository } from "lib/db/repository";
+import { chatRepository, userRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { handleError } from "../shared.chat";
@@ -36,8 +36,14 @@ export async function POST(request: Request) {
       `chatModel: ${chatModel?.provider}/${chatModel?.model}, threadId: ${threadId}`,
     );
 
+    // Get user preferences to access API keys
+    const userPreferences = await userRepository.getPreferences(
+      session.user.id,
+    );
+    const modelProvider = createDynamicModelProvider(userPreferences?.apiKeys);
+
     const result = streamText({
-      model: customModelProvider.getModel(chatModel),
+      model: modelProvider.getModel(chatModel),
       system: CREATE_THREAD_TITLE_PROMPT,
       experimental_transform: smoothStream({ chunking: "word" }),
       prompt: message,

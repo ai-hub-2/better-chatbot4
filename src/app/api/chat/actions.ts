@@ -21,7 +21,7 @@ import {
   mcpMcpToolCustomizationRepository,
   mcpServerCustomizationRepository,
 } from "lib/db/repository";
-import { customModelProvider } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
 import { toAny } from "lib/utils";
 import { McpServerCustomizationsPrompt, MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
@@ -112,7 +112,9 @@ export async function generateExampleToolSchemaAction(options: {
   toolInfo: MCPToolInfo;
   prompt?: string;
 }) {
-  const model = customModelProvider.getModel(options.model);
+  // TODO: Update this function to accept user API keys when used
+  const modelProvider = createDynamicModelProvider();
+  const model = modelProvider.getModel(options.model);
 
   const schema = jsonSchema(
     toAny({
@@ -196,8 +198,10 @@ export async function generateObjectAction({
   };
   schema: JSONSchema7 | ObjectJsonSchema7;
 }) {
+  // TODO: Update this function to accept user API keys when used
+  const modelProvider = createDynamicModelProvider();
   const result = await generateObject({
-    model: customModelProvider.getModel(model),
+    model: modelProvider.getModel(model),
     system: prompt.system,
     prompt: prompt.user || "",
     schema: jsonSchemaToZod(schema),

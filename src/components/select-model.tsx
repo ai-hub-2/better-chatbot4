@@ -1,12 +1,15 @@
 "use client";
 
 import { appStore } from "@/app/store";
-import { useChatModels } from "@/hooks/queries/use-chat-models";
+import { useChatModelsWithUserKeys } from "@/hooks/queries/use-chat-models-with-user-keys";
 import { ChatModel } from "app-types/chat";
-import { cn } from "lib/utils";
-import { CheckIcon, ChevronDown } from "lucide-react";
+import { cn, fetcher } from "lib/utils";
+import { CheckIcon, ChevronDown, KeyIcon } from "lucide-react";
 import { Fragment, memo, PropsWithChildren, useEffect, useState } from "react";
 import { Button } from "ui/button";
+import { APIKeyDialog } from "@/components/api-key-dialog";
+import { toast } from "sonner";
+import useSWR from "swr";
 
 import {
   Command,
@@ -27,10 +30,46 @@ interface SelectModelProps {
   showProvider?: boolean;
 }
 
+const providerNames = {
+  openai: "OpenAI",
+  google: "Google (Gemini)",
+  anthropic: "Anthropic (Claude)",
+  xai: "xAI (Grok)",
+  groq: "Groq",
+  openRouter: "OpenRouter",
+  ollama: "Ollama",
+} as const;
+
 export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
   const [open, setOpen] = useState(false);
-  const { data: providers } = useChatModels();
+  const { data: providers, mutate } = useChatModelsWithUserKeys();
   const [model, setModel] = useState(props.currentModel);
+  const { data: userApiKeys, mutate: mutateApiKeys } = useSWR(
+    "/api/user/api-keys",
+    fetcher,
+  );
+
+  const handleSaveApiKey = async (provider: string, apiKey: string) => {
+    try {
+      const response = await fetch("/api/user/api-keys", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ provider, apiKey }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save API key");
+      }
+
+      // Refresh API keys and models data
+      mutateApiKeys();
+      mutate();
+    } catch (error) {
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const modelToUse = props.currentModel ?? appStore.getState().chatModel;
@@ -86,6 +125,8 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                     <ProviderHeader
                       provider={provider.provider}
                       hasAPIKey={provider.hasAPIKey}
+                      onAddApiKey={() => handleSaveApiKey}
+                      userApiKeys={userApiKeys}
                     />
                   }
                   className={cn(
@@ -147,7 +188,18 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
 const ProviderHeader = memo(function ProviderHeader({
   provider,
   hasAPIKey,
-}: { provider: string; hasAPIKey: boolean }) {
+  onAddApiKey,
+  userApiKeys,
+}: {
+  provider: string;
+  hasAPIKey: boolean;
+  onAddApiKey: (provider: string, apiKey: string) => Promise<void>;
+  userApiKeys?: any;
+}) {
+  const providerName =
+    providerNames[provider as keyof typeof providerNames] || provider;
+  const currentApiKey = userApiKeys?.[provider] || "";
+
   return (
     <div className="text-sm text-muted-foreground flex items-center gap-1.5 group-hover:text-foreground transition-colors duration-300">
       {provider === "openai" ? (
@@ -158,13 +210,44 @@ const ProviderHeader = memo(function ProviderHeader({
       ) : (
         <ModelProviderIcon provider={provider} className="size-3" />
       )}
-      {provider}
-      {!hasAPIKey && (
+      {providerName}
+      {!hasAPIKey ? (
         <>
-          <span className="text-xs ml-auto text-muted-foreground">
-            No API Key
-          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <APIKeyDialog
+              provider={provider}
+              providerName={providerName}
+              currentApiKey={currentApiKey}
+              onSave={onAddApiKey}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <KeyIcon className="h-3 w-3 mr-1" />
+                Add Key
+              </Button>
+            </APIKeyDialog>
+          </div>
         </>
+      ) : (
+        <div className="ml-auto flex items-center gap-2">
+          <APIKeyDialog
+            provider={provider}
+            providerName={providerName}
+            currentApiKey={currentApiKey}
+            onSave={onAddApiKey}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <KeyIcon className="h-3 w-3" />
+            </Button>
+          </APIKeyDialog>
+        </div>
       )}
     </div>
   );

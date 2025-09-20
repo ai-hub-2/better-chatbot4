@@ -8,11 +8,16 @@ import {
   UIMessage,
 } from "ai";
 
-import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
+import { isToolCallUnsupportedModel } from "lib/ai/models";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
-import { agentRepository, chatRepository } from "lib/db/repository";
+import {
+  agentRepository,
+  chatRepository,
+  userRepository,
+} from "lib/db/repository";
 import globalLogger from "logger";
 import {
   buildMcpServerCustomizationsSystemPrompt,
@@ -66,7 +71,12 @@ export async function POST(request: Request) {
       mentions = [],
     } = chatApiSchemaRequestBodySchema.parse(json);
 
-    const model = customModelProvider.getModel(chatModel);
+    // Get user preferences to access API keys
+    const userPreferences = await userRepository.getPreferences(
+      session.user.id,
+    );
+    const modelProvider = createDynamicModelProvider(userPreferences?.apiKeys);
+    const model = modelProvider.getModel(chatModel);
 
     let thread = await chatRepository.selectThreadDetails(id);
 

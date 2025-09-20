@@ -17,7 +17,8 @@ import {
   MCPInstructionsContent,
   UserInstructionsContent,
 } from "./chat-preferences-content";
-import { UserIcon, X } from "lucide-react";
+import { APIKeyManagementContent } from "./api-key-management-content";
+import { UserIcon, X, KeyIcon } from "lucide-react";
 import { Button } from "ui/button";
 import { useTranslations } from "next-intl";
 import { MCPIcon } from "ui/mcp-icon";
@@ -34,6 +35,10 @@ export function ChatPreferencesPopup() {
       {
         label: t("Chat.ChatPreferences.userInstructions"),
         icon: <UserIcon className="w-4 h-4" />,
+      },
+      {
+        label: "API Keys",
+        icon: <KeyIcon className="w-4 h-4" />,
       },
       {
         label: t("Chat.ChatPreferences.mcpInstructions"),
@@ -149,6 +154,8 @@ export function ChatPreferencesPopup() {
                         {tab == 0 ? (
                           <UserInstructionsContent />
                         ) : tab == 1 ? (
+                          <APIKeyManagementContent />
+                        ) : tab == 2 ? (
                           <MCPInstructionsContent />
                         ) : null}
                       </>

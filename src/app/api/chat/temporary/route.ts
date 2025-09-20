@@ -6,7 +6,7 @@ import {
   smoothStream,
   streamText,
 } from "ai";
-import { customModelProvider } from "lib/ai/models";
+import { createDynamicModelProvider } from "lib/ai/dynamic-models";
 import globalLogger from "logger";
 import { buildUserSystemPrompt } from "lib/ai/prompts";
 import { userRepository } from "lib/db/repository";
@@ -35,7 +35,18 @@ export async function POST(request: Request) {
       instructions?: string;
     };
     logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
-    const model = customModelProvider.getModel(chatModel);
+
+    // Get user preferences to access API keys if user is authenticated
+    let userApiKeys;
+    if (session?.user?.id) {
+      const userPreferences = await userRepository.getPreferences(
+        session.user.id,
+      );
+      userApiKeys = userPreferences?.apiKeys;
+    }
+
+    const modelProvider = createDynamicModelProvider(userApiKeys);
+    const model = modelProvider.getModel(chatModel);
     const userPreferences =
       (await userRepository.getPreferences(session.user.id)) || undefined;
 
