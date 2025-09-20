@@ -1,7 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --frozen-lockfile",
   "devCommand": "pnpm dev",
   "regions": ["iad1"],
   "functions": {
@@ -14,5 +15,27 @@
     "BETTER_AUTH_SECRET": "@better_auth_secret",
     "BETTER_AUTH_URL": "@better_auth_url",
     "API_KEY_ENCRYPTION_KEY": "@api_key_encryption_key"
-  }
+  },
+  "build": {
+    "env": {
+      "POSTGRES_URL": "@postgres_url",
+      "BETTER_AUTH_SECRET": "@better_auth_secret",
+      "BETTER_AUTH_URL": "@better_auth_url",
+      "API_KEY_ENCRYPTION_KEY": "@api_key_encryption_key"
+    }
+  },
+  "github": {
+    "autoDeployment": true
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
 }
