@@ -1,0 +1,18 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "devCommand": "pnpm dev",
+  "regions": ["iad1"],
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "POSTGRES_URL": "@postgres_url",
+    "BETTER_AUTH_SECRET": "@better_auth_secret",
+    "BETTER_AUTH_URL": "@better_auth_url",
+    "API_KEY_ENCRYPTION_KEY": "@api_key_encryption_key"
+  }
+}
