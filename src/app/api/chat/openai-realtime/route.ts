@@ -1,6 +1,7 @@
+export const runtime = "nodejs";
 import { NextRequest } from "next/server";
 import { getSession } from "auth/server";
-import { AllowedMCPServer, VercelAIMcpTool } from "app-types/mcp";
+import { VercelAIMcpTool } from "app-types/mcp";
 import { userRepository } from "lib/db/repository";
 import {
   filterMcpServerCustomizations,
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       model: z.string().optional(),
       voice: z.string().default("alloy"),
       agentId: z.string().optional(),
-      allowedMcpServers: z.record(z.any()).default({}),
+      allowedMcpServers: z.record(z.string(), z.any()).default({}),
     });
     const { voice, allowedMcpServers, agentId } = BodySchema.parse(
       await request.json(),
