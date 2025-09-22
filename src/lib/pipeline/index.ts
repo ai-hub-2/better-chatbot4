@@ -21,12 +21,15 @@ export async function pipelineWorker(job: Job<PipelinePayload>) {
   const exec = await execute(ctx, planResult);
   ctx.logs.push(`test:start`);
   const testResult = await test(ctx, exec);
-  if (!testResult.ok) {
+  let fixResult;
+  if (!testResult.passed) {
     ctx.logs.push(`fix:start`);
-    await fix(ctx);
+    fixResult = await fix(ctx, testResult);
+  } else {
+    fixResult = { fixed: true, fixes: [], summary: "No fixes needed" };
   }
   ctx.logs.push(`summarize:start`);
-  const summary = await summarize(ctx);
+  const summary = await summarize(ctx, fixResult);
   // optional deploy trigger
   try {
     if (process.env.PIPELINE_AUTO_DEPLOY === "1") {
@@ -36,5 +39,14 @@ export async function pipelineWorker(job: Job<PipelinePayload>) {
       );
     }
   } catch {}
-  return { ok: true, summary, logs: ctx.logs };
+  return {
+    success: summary.overall_status === "success",
+    summary,
+    logs: ctx.logs,
+    analysis,
+    plan: planResult,
+    execution: exec,
+    testing: testResult,
+    fixes: fixResult,
+  };
 }
