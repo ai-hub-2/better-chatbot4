@@ -16,6 +16,11 @@ export async function register() {
         (m) => m.initMCPManager,
       );
       await initMCPManager();
+
+      // register queue workers
+      const { registerPipelineWorker } = await import("./lib/queue");
+      const { pipelineWorker } = await import("./lib/pipeline");
+      registerPipelineWorker(pipelineWorker);
     }
   }
 }
