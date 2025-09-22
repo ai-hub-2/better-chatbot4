@@ -34,7 +34,15 @@ export async function fix(
   }
 
   const failedTests = testResult.testResults.filter((t) => !t.passed);
-  const fixes = [];
+  const fixes: Array<{
+    testName: string;
+    description: string;
+    type: string;
+    files: any[];
+    commands: any[];
+    explanation: string;
+    applied: boolean;
+  }> = [];
 
   for (const failedTest of failedTests) {
     ctx.logs.push(`🔍 Analyzing failure: ${failedTest.name}`);

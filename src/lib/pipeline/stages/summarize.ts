@@ -1,4 +1,5 @@
 import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
 
 export async function summarize(
   ctx: { projectId: string; prompt: string; logs: string[] },
@@ -16,8 +17,8 @@ export async function summarize(
   ctx.logs.push(`📝 Generating comprehensive summary...`);
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const response = await generateText({
+      model: openai("gpt-4o"),
       messages: [
         {
           role: "system",
@@ -53,10 +54,9 @@ Please provide a comprehensive summary of this pipeline execution.`,
         },
       ],
       temperature: 0.3,
-      response_format: { type: "json_object" },
     });
 
-    const summary = JSON.parse(response.choices[0]?.message?.content || "{}");
+    const summary = JSON.parse(response.text || "{}");
 
     ctx.logs.push(`✅ Summary generated successfully`);
 

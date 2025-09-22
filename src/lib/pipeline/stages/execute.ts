@@ -1,4 +1,3 @@
-import { openai } from "@ai-sdk/openai";
 import { sandboxJobManager } from "lib/sandbox/job-manager";
 
 export async function execute(
@@ -20,7 +19,13 @@ export async function execute(
 ) {
   ctx.logs.push(`🚀 Executing ${plan.steps.length} steps...`);
 
-  const results = [];
+  const results: Array<{
+    stepId: string;
+    stepName: string;
+    success: boolean;
+    output: string;
+    error: string | null;
+  }> = [];
   const sortedSteps = plan.steps.sort((a, b) => a.order - b.order);
 
   for (const step of sortedSteps) {
@@ -104,7 +109,11 @@ async function executeFileOperations(step: any, ctx: any) {
     return { success: false, error: "No files specified" };
   }
 
-  const fileResults = [];
+  const fileResults: Array<{
+    path: string;
+    success: boolean;
+    error?: string;
+  }> = [];
   for (const file of step.files) {
     try {
       // Use the studio files API to create/modify files
@@ -151,7 +160,12 @@ async function executeCommands(step: any, ctx: any) {
     return { success: false, error: "No commands specified" };
   }
 
-  const commandResults = [];
+  const commandResults: Array<{
+    command: string;
+    success: boolean;
+    output?: string;
+    error?: string;
+  }> = [];
   for (const command of step.commands) {
     try {
       const job = sandboxJobManager.start({
