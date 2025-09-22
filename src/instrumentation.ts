@@ -21,6 +21,15 @@ export async function register() {
       const { registerPipelineWorker } = await import("./lib/queue");
       const { pipelineWorker } = await import("./lib/pipeline");
       registerPipelineWorker(pipelineWorker);
+
+      // optionally wire Redis-backed graph memory if REDIS_URL provided
+      if (process.env.REDIS_URL) {
+        const IORedis = (await import("ioredis")).default;
+        const { setGraphMemoryRedis } = await import(
+          "./lib/ai/memory/graph-memory"
+        );
+        setGraphMemoryRedis(new IORedis(process.env.REDIS_URL));
+      }
     }
   }
 }

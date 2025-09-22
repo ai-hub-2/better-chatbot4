@@ -5,7 +5,13 @@ export const GET = async (
   { params }: { params: Promise<{ project: string }> },
 ) => {
   const { project } = await params;
-  return Response.json(graphMemory.list(project));
+  const detailed = (graphMemory as any).listDetailed
+    ? await (graphMemory as any).listDetailed(project)
+    : {
+        short: await graphMemory.list(project),
+        long: await graphMemory.list(project),
+      };
+  return Response.json(detailed);
 };
 
 export const POST = async (
