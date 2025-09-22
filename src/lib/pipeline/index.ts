@@ -27,5 +27,14 @@ export async function pipelineWorker(job: Job<PipelinePayload>) {
   }
   ctx.logs.push(`summarize:start`);
   const summary = await summarize(ctx);
+  // optional deploy trigger
+  try {
+    if (process.env.PIPELINE_AUTO_DEPLOY === "1") {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+      await fetch(`${baseUrl}/api/deploy/hooks`, { method: "POST" }).catch(
+        () => undefined,
+      );
+    }
+  } catch {}
   return { ok: true, summary, logs: ctx.logs };
 }
