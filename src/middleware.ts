@@ -32,7 +32,8 @@ export async function middleware(request: NextRequest) {
         "media-src 'self' data: blob:",
         "font-src 'self' data:",
         "style-src 'self' 'unsafe-inline'",
-        "script-src 'self' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval'",
+        // Allow Next.js runtime scripts without nonces; remove 'strict-dynamic' to avoid blocking bundles
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
         "connect-src 'self' https: http: ws: wss:",
         "frame-ancestors 'none'",
       ].join("; "),

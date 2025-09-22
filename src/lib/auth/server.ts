@@ -4,7 +4,6 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { pgDb } from "lib/db/pg/db.pg";
 import { headers } from "next/headers";
-import { toast } from "sonner";
 import {
   AccountSchema,
   SessionSchema,
@@ -65,13 +64,8 @@ export const auth = betterAuth({
       ).filter((key) => socialAuthenticationProviders[key]),
     },
   },
-  fetchOptions: {
-    onError(e) {
-      if (e.error.status === 429) {
-        toast.error("Too many requests. Please try again later.");
-      }
-    },
-  },
+  // Avoid using client-only libraries on the server runtime
+  fetchOptions: {},
   socialProviders: socialAuthenticationProviders,
 });
 
