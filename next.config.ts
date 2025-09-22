@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import withPWA from "next-pwa";
 
 const BUILD_OUTPUT = process.env.NEXT_STANDALONE_OUTPUT
   ? "standalone"
@@ -17,5 +18,12 @@ export default () => {
     },
   };
   const withNextIntl = createNextIntlPlugin();
-  return withNextIntl(nextConfig);
+  const withPwa = withPWA({
+    dest: "public",
+    disable: process.env.NODE_ENV !== "production",
+    cacheOnFrontEndNav: true,
+    register: true,
+    skipWaiting: true,
+  });
+  return withNextIntl(withPwa(nextConfig));
 };

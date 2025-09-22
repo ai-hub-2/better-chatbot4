@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   title: "better-chatbot",
   description:
     "Better Chatbot is a chatbot that uses the Tools to answer questions.",
+  manifest: "/manifest.json",
+  themeColor: "#0b0b0b",
 };
 
 // const themes = BASE_THEMES.flatMap((t) => [t, `${t}-dark`]);
