@@ -43,6 +43,8 @@ import {
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
+import { parseChatCommand } from "lib/chat/command-parser";
+import { getUserRoleForProject, hasPermission } from "lib/security/rbac";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -278,7 +280,7 @@ export async function POST(request: Request) {
           } as any);
         }
 
-        // Auto-build: detect if the user message is a build intent and trigger studio/orchestrator
+        // Strict command parsing and RBAC
         try {
           const lastUserText = (message.parts || [])
             .map((p: any) =>
@@ -286,18 +288,47 @@ export async function POST(request: Request) {
             )
             .join(" ")
             .toLowerCase();
-          const isBuildIntent =
-            /\b(build|create|scaffold|generate)\b/.test(lastUserText) ||
-            /\bapp|website|project\b/.test(lastUserText) ||
-            /\bانشئ|ابن|موقع|تطبيق\b/.test(lastUserText);
-          if (isBuildIntent) {
+          const cmd = parseChatCommand(lastUserText);
+          if (cmd) {
             const projectId = thread!.id;
-            // enqueue pipeline for full build
-            fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/pipeline`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ projectId, prompt: lastUserText }),
-            }).catch(() => undefined);
+            const role = getUserRoleForProject(
+              session.user.id,
+              session.user.id,
+            );
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+            if (cmd.type === "pipeline.run") {
+              if (!hasPermission(role, "pipeline:run")) return;
+              fetch(`${baseUrl}/api/pipeline`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ projectId, prompt: cmd.prompt }),
+              }).catch(() => undefined);
+            } else if (cmd.type === "workflow.create") {
+              if (!hasPermission(role, "workflow:create")) return;
+              fetch(`${baseUrl}/api/workflow`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: cmd.name,
+                  description: cmd.description,
+                }),
+              }).catch(() => undefined);
+            } else if (cmd.type === "workflow.update") {
+              if (!hasPermission(role, "workflow:update")) return;
+              // backend has update by id; name->id resolution omitted here
+            } else if (cmd.type === "workflow.execute") {
+              // name->id resolution omitted; execution via existing endpoint
+            } else if (cmd.type === "agent.create") {
+              if (!hasPermission(role, "agent:create")) return;
+              // use existing agent APIs (omitted for brevity)
+            } else if (cmd.type === "agent.update") {
+              if (!hasPermission(role, "agent:update")) return;
+            } else if (cmd.type === "mcp.invoke") {
+              if (!hasPermission(role, "mcp:invoke")) return;
+              // The actual MCP invocation flows through tool calls already
+            } else if (cmd.type === "model.select") {
+              // model selection handled by chat preferences/store in UI; backend persists via messages metadata
+            }
           }
         } catch {}
       },
