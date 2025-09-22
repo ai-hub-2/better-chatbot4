@@ -9,7 +9,8 @@ export async function register() {
       );
       await runMigrate().catch((e) => {
         console.error(e);
-        process.exit(1);
+        // Do not crash the server if the database is unavailable locally.
+        // Continue startup; features requiring DB will error gracefully.
       });
       const initMCPManager = await import("./lib/ai/mcp/mcp-manager").then(
         (m) => m.initMCPManager,
