@@ -1,3 +1,32 @@
+name: Deploy to Vercel (Deploy Hook)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+  release:
+    types: [published]
+
+jobs:
+  trigger-vercel-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger Vercel Deploy Hook
+        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }}
+        run: |
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL" || exit 1
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+
+      - name: Echo missing hook
+        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL == '' }}
+        run: |
+          echo "VERCEL_DEPLOY_HOOK_URL secret is not set. Skipping deploy trigger." && exit 0
+
 name: Deploy
 
 on:
